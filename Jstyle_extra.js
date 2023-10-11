@@ -58,6 +58,13 @@ var dynamicStyle = function (baseElement = document) {
     },
   };
 
+  // 1-1. Handle negative margins
+  for (let prefix in stylesNumber) {
+    if (prefix.startsWith('m')) {
+      stylesNumber[prefix + '-n'] = stylesNumber[prefix];
+    }
+  }
+
   // 2. Function to validate if the given className has a valid style prefix
   function checkValidClass(className) {
     if (stylesString[className]) {
@@ -83,11 +90,16 @@ var dynamicStyle = function (baseElement = document) {
       return;
     }
 
-    // If not a string style, check and apply number styles
     const parts = className.split("-");
-    const prefix = parts[0];
-    const value = parts[1];
-    if (stylesNumber[prefix] && !isNaN(value) && parts.length === 2) {
+    let prefix = parts[0];
+    let value = parts[1];
+
+    // Adjust value for negative margin (m-nX 형태 확인)
+    if (value && value.startsWith('n')) {
+      value = "-" + value.slice(1); // 'n' 제거하고 음수로 변경
+    }
+
+    if (stylesNumber[prefix] && value && !isNaN(parseFloat(value))) {
       const styleInfo = stylesNumber[prefix];
       element.style.setProperty(
         styleInfo[0],
@@ -145,7 +157,7 @@ var dynamicStyle = function (baseElement = document) {
     }
   });
 
-  observer.observe(baseElement, {
+  observer.observe (baseElement, {
     attributes: false,
     childList: true,
     subtree: true,
