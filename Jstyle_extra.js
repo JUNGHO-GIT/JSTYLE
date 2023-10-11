@@ -1,41 +1,60 @@
 // --------------------------------------------------------------------------------------------->
 var dynamicStyle = function (baseElement = document) {
+
   // 1. Object mapping style prefixes to corresponding CSS property and its unit
   const stylesNumber = {
-    "w": ["width", "%"],
-    "h": ["height", "%"],
-    "p": ["padding", "px"],
-    "pt": ["padding-top", "px"],
-    "pb": ["padding-bottom", "px"],
-    "ps": ["padding-left", "px"],
-    "pe": ["padding-right", "px"],
-    "m": ["margin", "px"],
-    "mt": ["margin-top", "px"],
-    "mb": ["margin-bottom", "px"],
-    "ms": ["margin-left", "px"],
-    "me": ["margin-right", "px"],
-    "fw": ["font-weight", "00"],
-    "fs": ["font-size", "px"],
+    w  : ["width", "%"],
+    h  : ["height", "%"],
+    p  : ["padding", "px"],
+    pt : ["padding-top", "px"],
+    pb : ["padding-bottom", "px"],
+    ps : ["padding-left", "px"],
+    pe : ["padding-right", "px"],
+    m  : ["margin", "px"],
+    mt : ["margin-top", "px"],
+    mb : ["margin-bottom", "px"],
+    ms : ["margin-left", "px"],
+    me : ["margin-right", "px"],
+    fw : ["font-weight", "00"],
+    fs : ["font-size", "px"],
   };
 
   const stylesString = {
     "d-center": {
       "display": "flex",
-      "justifyContent": "center",
-      "alignItems": "center",
-      "textAlign": "center",
+      "justify-content": "center",
+      "align-items": "center",
+      "text-align": "center",
     },
     "d-left": {
       "display": "flex",
-      "justifyContent": "flex-start",
-      "alignItems": "center",
-      "textAlign": "left",
+      "justify-content": "flex-start",
+      "align-items": "center",
+      "text-align": "left",
     },
     "d-right": {
       "display": "flex",
-      "justifyContent": "flex-end",
-      "alignItems": "center",
-      "textAlign": "right",
+      "justify-content": "flex-end",
+      "align-items": "center",
+      "text-align": "right",
+    },
+    "d-none": {
+      "display": "none",
+    },
+    "d-flex": {
+      "display": "flex",
+    },
+    "over-hidden": {
+      "overflow": "hidden",
+    },
+    "over-auto": {
+      "overflow": "auto",
+    },
+    "pointer": {
+      "cursor": "pointer",
+    },
+    "resize-none": {
+      "resize": "none",
     },
   };
 
