@@ -1,32 +1,32 @@
 // useDynamicStyle.ts
 import {useLayoutEffect} from "react";
 
-// ------------------------------------------------------------------------------------------------>
+// useDynamicStyle -------------------------------------------------------------------------------->
 export const useDynamicStyle = (
-  baseElement:Document | HTMLElement = document,
+  baseElement:Document,
   locationName:string
 ) => {
 
-  // Define styleMap for each style type ---------------------------------------------------------->
+  // 숫자관련 스타일과 문자열 관련 스타일 --------------------------------------------------------->
   const stylesNumber:any = {
-    w  : ["width", "%"],
-    h  : ["height", "%"],
-    t  : ["top", "px"],
-    b  : ["bottom", "px"],
-    l  : ["left", "px"],
-    r  : ["right", "px"],
-    p  : ["padding", "px"],
-    pt : ["padding-top", "px"],
-    pb : ["padding-bottom", "px"],
-    ps : ["padding-left", "px"],
-    pe : ["padding-right", "px"],
-    m  : ["margin", "px"],
-    mt : ["margin-top", "px"],
-    mb : ["margin-bottom", "px"],
-    ms : ["margin-left", "px"],
-    me : ["margin-right", "px"],
-    fw : ["font-weight", "00"],
-    fs : ["font-size", "px"],
+    "w": ["width", "%"],
+    "h": ["height", "%"],
+    "t": ["top", "px"],
+    "b": ["bottom", "px"],
+    "l": ["left", "px"],
+    "r": ["right", "px"],
+    "p": ["padding", "px"],
+    "pt": ["padding-top", "px"],
+    "pb": ["padding-bottom", "px"],
+    "ps": ["padding-left", "px"],
+    "pe": ["padding-right", "px"],
+    "m": ["margin", "px"],
+    "mt": ["margin-top", "px"],
+    "mb": ["margin-bottom", "px"],
+    "ms": ["margin-left", "px"],
+    "me": ["margin-right", "px"],
+    "fw": ["font-weight", "00"],
+    "fs": ["font-size", "px"],
   };
 
   const stylesString:any = {
@@ -90,52 +90,92 @@ export const useDynamicStyle = (
     },
   };
 
-  // Check if class name is valid --------------------------------------------------------------->
-  const isValidClass = (className:string) => {
-    const isNumberBased = !!stylesNumber[className.split("-")[0]];
-    const isStringBased = !!stylesString[className];
-    return isNumberBased || isStringBased;
+  // 스타일 맵 만들기 ----------------------------------------------------------------------------->
+  let styleMap:Map<string, any> = new Map();
+
+  Object.keys(stylesNumber).forEach((key) => {
+    styleMap.set(key, {
+      type: "number",
+      styles: stylesNumber[key],
+    });
+  });
+
+  Object.keys(stylesString).forEach((key) => {
+    styleMap.set(key, {
+      type: "string",
+      styles: stylesString[key],
+    });
+  });
+
+  // 숫자 검증 및 적용 ---------------------------------------------------------------------------->
+  const applyNumberStyle = (element:HTMLElement, className:string) => {
+    let [prefix, value] = className.split("-");
+    let styleInfo = styleMap.get(prefix);
+
+    if (styleInfo && styleInfo.type === "number") {
+      let [property, unit] = styleInfo.styles;
+      let style = value + unit;
+      element.style.setProperty(property, style, "important");
+    }
   };
 
-  // Apply style to element ----------------------------------------------------------------------->
-  const applyStyle = (element:HTMLElement) => {
-    element.classList.forEach((className) => {
-      if (isValidClass(className)) {
+  // 문자열 검증 및 적용 -------------------------------------------------------------------------->
+  const applyStringStyle = (element:HTMLElement, className:string) => {
+    let styleInfo = styleMap.get(className);
+    if (styleInfo && styleInfo.type === "string") {
+      let style = styleInfo.styles;
+      Object.keys(style).forEach((property) => {
+        element.style.setProperty(property, style[property], "important");
+      });
+    }
+  };
 
-        // Convert to negative number if needed
-        let [prefix, value] = className.split("-");
-        if (value && value.startsWith("n")) {
-          value = "-" + value.substring(1);
-        }
+  // 전체 스타일 검증 및 해당 함수 호출 ----------------------------------------------------------->
+  const checkAndApplyStyle = (element:HTMLElement) => {
+    let classNames:Array<string> = [];
 
-        if (stylesNumber[prefix]) {
-          const [property, unit] = stylesNumber[prefix];
-          element.style[property] = `${value}${unit}`;
+    if (typeof element.className === "string") {
+      classNames = element.className.split(" ").filter(Boolean);
+    }
+    else {
+      classNames = Array.from(element.classList);
+    }
+
+    classNames.forEach((className) => {
+      if (styleMap.has(className)) {
+        let styleInfo = styleMap.get(className);
+        if (styleInfo) {
+          if (styleInfo.type === "number") {
+            applyNumberStyle(element, className);
+          } else if (styleInfo.type === "string") {
+            applyStringStyle(element, className);
+          }
         }
-        else if (stylesString[className]) {
-          Object.entries(stylesString[className]).forEach(([property, value]) => {
-            element.style[property] = value;
-          });
+      }
+      else {
+        let stylePrefix = className.split("-")[0];
+        if (styleMap.has(stylePrefix)) {
+          let styleInfo = styleMap.get(stylePrefix);
+          if (styleInfo && styleInfo.type === "number") {
+            applyNumberStyle(element, className);
+          }
         }
       }
     });
   };
 
-  // Define selector ------------------------------------------------------------------------------>
-  const numberSelector = Object.keys(stylesNumber).map((prefix) => `[class*="${prefix}-"]`).join(", ");
-  const stringSelector = Object.keys(stylesString).join(", ");
-  const selector = `${numberSelector}, ${stringSelector}`;
-
-  // UseLayoutEffect ------------------------------------------------------------------------------>
+  // useLayoutEffect를 사용해서 동적으로 스타일 적용 ---------------------------------------------->
   useLayoutEffect(() => {
-    baseElement.querySelectorAll(selector).forEach(applyStyle);
+    baseElement.querySelectorAll("*").forEach((element:HTMLElement | any) => {
+      checkAndApplyStyle(element);
+    });
 
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         if (mutation.type === "childList") {
           mutation.addedNodes.forEach((node) => {
             if (node.nodeType === Node.ELEMENT_NODE) {
-              applyStyle(node);
+              checkAndApplyStyle(node as HTMLElement);
             }
           });
         }
@@ -150,6 +190,6 @@ export const useDynamicStyle = (
     return () => {
       observer.disconnect();
     };
-  }, [baseElement, locationName]);
 
+  }, [baseElement, locationName]);
 };
