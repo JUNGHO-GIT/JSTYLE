@@ -1,10 +1,14 @@
+// dynamicStyle.js
 var dynamicStyle = function (baseElement = document) {
-  const styleMap = new Map();
 
-  // 1. Object mapping style prefixes to corresponding CSS property and its unit
+  // Define styleMap for each style type ---------------------------------------------------------->
   var stylesNumber = {
     w  : ["width", "%"],
     h  : ["height", "%"],
+    t  : ["top", "px"],
+    b  : ["bottom", "px"],
+    l  : ["left", "px"],
+    r  : ["right", "px"],
     p  : ["padding", "px"],
     pt : ["padding-top", "px"],
     pb : ["padding-bottom", "px"],
@@ -65,65 +69,66 @@ var dynamicStyle = function (baseElement = document) {
     "webkit-fill": {
       "width": "-webkit-fill-available",
       "height": "-webkit-fill-available",
-    }
+    },
+    "pos-rel": {
+      "position": "relative",
+    },
+    "pos-ab": {
+      "position": "absolute",
+    },
+    "pos-fix": {
+      "position": "fixed",
+    },
+    "pos-stc": {
+      "position": "static",
+    },
   };
 
-  // Populate styleMap
-  Object.keys(stylesNumber).forEach((key) => {
-    styleMap.set(key, { type: "number", prefix: key });
-  });
+  // Check if class name is valid --------------------------------------------------------------->
+  var isValidClass = (className) => {
+    var isNumberBased = !!stylesNumber[className.split("-")[0]];
+    var isStringBased = !!stylesString[className];
+    return isNumberBased || isStringBased;
+  };
 
-  Object.keys(stylesString).forEach((key) => {
-    styleMap.set(key, { type: "string" });
-  });
+  // Apply style to element ----------------------------------------------------------------------->
+  var applyStyle = (element) => {
+    element.classList.forEach((className) => {
+      if (isValidClass(className)) {
 
-  function applyStyle(element, className, styleInfo) {
-    if (styleInfo.type === "string") {
-      Object.assign(element.style, stylesString[className]);
-    } else if (styleInfo.type === "number") {
-      const [property, unit] = stylesNumber[styleInfo.prefix];
-      element.style.setProperty(
-        property,
-        `${styleInfo.value}${unit}`,
-        "important"
-      );
-    }
-  }
+        // Convert to negative number if needed
+        var [prefix, value] = className.split("-");
+        if (value && value.startsWith("n")) {
+          value = "-" + value.substring(1);
+        }
 
-  function checkAndApplyStyle(element) {
-    const classNames = element.className.split(" ");
-    for (const className of classNames) {
-      let value = className.split("-")[1];
-      let prefix = className.split("-")[0];
-      // Convert to negative
-      if (value && value.startsWith("n")) {
-        value = "-" + value.substring(1);
-      }
-
-      const styleInfo = styleMap.get(prefix);
-      if (styleInfo) {
-        if (styleInfo.type === "number" && !isNaN(value)) {
-          const [property, unit] = stylesNumber[styleInfo.prefix];
-          element.style.setProperty(property, `${value}${unit}`, "important");
-        } else if (styleInfo.type === "string") {
-          applyStyle(element, className, styleInfo);
+        if (stylesNumber[prefix]) {
+          var [property, unit] = stylesNumber[prefix];
+          element.style[property] = `${value}${unit}`;
+        }
+        else if (stylesString[className]) {
+          Object.entries(stylesString[className]).forEach(([property, value]) => {
+            element.style[property] = value;
+          });
         }
       }
-    }
-  }
+    });
+  };
 
-  // Initial application
-  baseElement
-    .querySelectorAll("*")
-    .forEach((element) => checkAndApplyStyle(element));
+  // Define selector ------------------------------------------------------------------------------>
+  var numberSelector = Object.keys(stylesNumber).map((prefix) => `[class*="${prefix}-"]`).join(", ");
+  var stringSelector = Object.keys(stylesString).join(", ");
+  var selector = `${numberSelector}, ${stringSelector}`;
 
-  // Observe dynamic changes
-  const observer = new MutationObserver((mutations) => {
+  // Query all elements and apply style ----------------------------------------------------------->
+  baseElement.querySelectorAll(selector).forEach(applyStyle);
+
+  var observer = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
       if (mutation.type === "childList") {
         mutation.addedNodes.forEach((node) => {
           if (node.nodeType === Node.ELEMENT_NODE) {
-            checkAndApplyStyle(node);
+            applyStyle(node);
           }
         });
       }
@@ -136,7 +141,7 @@ var dynamicStyle = function (baseElement = document) {
   });
 };
 
-// Apply styles when DOM is ready
+// Apply styles when DOM is ready ----------------------------------------------------------------->
 document.addEventListener("DOMContentLoaded", () => {
   dynamicStyle();
 });
