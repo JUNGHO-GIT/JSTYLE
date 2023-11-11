@@ -1,26 +1,25 @@
-// dynamicStyle.js
 var dynamicStyle = function (baseElement = document) {
 
-  // Define styleMap for each style type ---------------------------------------------------------->
+  // 숫자관련 스타일과 문자열 관련 스타일 --------------------------------------------------------->
   var stylesNumber = {
-    w  : ["width", "%"],
-    h  : ["height", "%"],
-    t  : ["top", "px"],
-    b  : ["bottom", "px"],
-    l  : ["left", "px"],
-    r  : ["right", "px"],
-    p  : ["padding", "px"],
-    pt : ["padding-top", "px"],
-    pb : ["padding-bottom", "px"],
-    ps : ["padding-left", "px"],
-    pe : ["padding-right", "px"],
-    m  : ["margin", "px"],
-    mt : ["margin-top", "px"],
-    mb : ["margin-bottom", "px"],
-    ms : ["margin-left", "px"],
-    me : ["margin-right", "px"],
-    fw : ["font-weight", "00"],
-    fs : ["font-size", "px"],
+    "w": ["width", "%"],
+    "h": ["height", "%"],
+    "t": ["top", "px"],
+    "b": ["bottom", "px"],
+    "l": ["left", "px"],
+    "r": ["right", "px"],
+    "p": ["padding", "px"],
+    "pt": ["padding-top", "px"],
+    "pb": ["padding-bottom", "px"],
+    "ps": ["padding-left", "px"],
+    "pe": ["padding-right", "px"],
+    "m": ["margin", "px"],
+    "mt": ["margin-top", "px"],
+    "mb": ["margin-bottom", "px"],
+    "ms": ["margin-left", "px"],
+    "me": ["margin-right", "px"],
+    "fw": ["font-weight", "00"],
+    "fs": ["font-size", "px"],
   };
 
   var stylesString = {
@@ -84,51 +83,91 @@ var dynamicStyle = function (baseElement = document) {
     },
   };
 
-  // Check if class name is valid --------------------------------------------------------------->
-  var isValidClass = (className) => {
-    var isNumberBased = !!stylesNumber[className.split("-")[0]];
-    var isStringBased = !!stylesString[className];
-    return isNumberBased || isStringBased;
+  // 스타일 맵 만들기 ----------------------------------------------------------------------------->
+  var styleMap = new Map();
+
+  Object.keys(stylesNumber).forEach((key) => {
+    styleMap.set(key, {
+      type: "number",
+      styles: stylesNumber[key],
+    });
+  });
+
+  Object.keys(stylesString).forEach((key) => {
+    styleMap.set(key, {
+      type: "string",
+      styles: stylesString[key],
+    });
+  });
+
+  // 숫자 검증 및 적용 ---------------------------------------------------------------------------->
+  var applyNumberStyle = (element, className) => {
+    var [prefix, value] = className.split("-");
+    var styleInfo = styleMap.get(prefix);
+
+    if (styleInfo && styleInfo.type === "number") {
+      var [property, unit] = styleInfo.styles;
+      var style = value + unit;
+      element.style.setProperty(property, style, "important");
+    }
   };
 
-  // Apply style to element ----------------------------------------------------------------------->
-  var applyStyle = (element) => {
-    element.classList.forEach((className) => {
-      if (isValidClass(className)) {
+  // 문자열 검증 및 적용 -------------------------------------------------------------------------->
+  var applyStringStyle = (element, className) => {
+    var styleInfo = styleMap.get(className);
+    if (styleInfo && styleInfo.type === "string") {
+      var style = styleInfo.styles;
+      Object.keys(style).forEach((property) => {
+        element.style.setProperty(property, style[property], "important");
+      });
+    }
+  };
 
-        // Convert to negative number if needed
-        var [prefix, value] = className.split("-");
-        if (value && value.startsWith("n")) {
-          value = "-" + value.substring(1);
-        }
+  // 전체 스타일 검증 및 해당 함수 호출 ----------------------------------------------------------->
+  var checkAndApplyStyle = (element) => {
+    var classNames = [];
 
-        if (stylesNumber[prefix]) {
-          var [property, unit] = stylesNumber[prefix];
-          element.style[property] = `${value}${unit}`;
+    if (typeof element.className === "string") {
+      classNames = element.className.split(" ").filter(Boolean);
+    }
+    else {
+      classNames = Array.from(element.classList);
+    }
+
+    classNames.forEach((className) => {
+      if (styleMap.has(className)) {
+        var styleInfo = styleMap.get(className);
+        if (styleInfo) {
+          if (styleInfo.type === "number") {
+            applyNumberStyle(element, className);
+          } else if (styleInfo.type === "string") {
+            applyStringStyle(element, className);
+          }
         }
-        else if (stylesString[className]) {
-          Object.entries(stylesString[className]).forEach(([property, value]) => {
-            element.style[property] = value;
-          });
+      }
+      else {
+        var stylePrefix = className.split("-")[0];
+        if (styleMap.has(stylePrefix)) {
+          var styleInfo = styleMap.get(stylePrefix);
+          if (styleInfo && styleInfo.type === "number") {
+            applyNumberStyle(element, className);
+          }
         }
       }
     });
   };
 
-  // Define selector ------------------------------------------------------------------------------>
-  var numberSelector = Object.keys(stylesNumber).map((prefix) => `[class*="${prefix}-"]`).join(", ");
-  var stringSelector = Object.keys(stylesString).join(", ");
-  var selector = `${numberSelector}, ${stringSelector}`;
-
-  // Query all elements and apply style ----------------------------------------------------------->
-  baseElement.querySelectorAll(selector).forEach(applyStyle);
+  // 동적 스타일 적용 ----------------------------------------------------------------------------->
+  baseElement.querySelectorAll("*").forEach((element) => {
+    checkAndApplyStyle(element);
+  });
 
   var observer = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
       if (mutation.type === "childList") {
         mutation.addedNodes.forEach((node) => {
           if (node.nodeType === Node.ELEMENT_NODE) {
-            applyStyle(node);
+            checkAndApplyStyle(node);
           }
         });
       }
@@ -139,9 +178,9 @@ var dynamicStyle = function (baseElement = document) {
     childList: true,
     subtree: true
   });
+
 };
 
-// Apply styles when DOM is ready ----------------------------------------------------------------->
 document.addEventListener("DOMContentLoaded", () => {
   dynamicStyle();
 });
