@@ -1,11 +1,20 @@
-import { useEffect, useLayoutEffect } from "react";
+// useDynamicStyle.ts
+import {useLayoutEffect} from "react";
 
-// Hook을 사용하여 동적 스타일을 적용하는 커스텀 훅
-export const useDynamicStyle = (baseElement = document) => {
-  // 스타일 속성과 단위를 매핑하는 객체
-  const stylesNumber = {
+// ------------------------------------------------------------------------------------------------>
+export const useDynamicStyle = (
+  baseElement:Document | HTMLElement = document,
+  locationName:string
+) => {
+
+  // Define styleMap for each style type ---------------------------------------------------------->
+  const stylesNumber:any = {
     w  : ["width", "%"],
     h  : ["height", "%"],
+    t  : ["top", "px"],
+    b  : ["bottom", "px"],
+    l  : ["left", "px"],
+    r  : ["right", "px"],
     p  : ["padding", "px"],
     pt : ["padding-top", "px"],
     pb : ["padding-bottom", "px"],
@@ -20,7 +29,7 @@ export const useDynamicStyle = (baseElement = document) => {
     fs : ["font-size", "px"],
   };
 
-  const stylesString = {
+  const stylesString:any = {
     "d-center": {
       "display": "flex",
       "justify-content": "center",
@@ -66,25 +75,44 @@ export const useDynamicStyle = (baseElement = document) => {
     "webkit-fill": {
       "width": "-webkit-fill-available",
       "height": "-webkit-fill-available",
-    }
+    },
+    "pos-rel": {
+      "position": "relative",
+    },
+    "pos-ab": {
+      "position": "absolute",
+    },
+    "pos-fix": {
+      "position": "fixed",
+    },
+    "pos-stc": {
+      "position": "static",
+    },
   };
 
-  // 유효한 클래스 이름인지 확인하는 함수
-  const isValidClass = (className) => {
+  // Check if class name is valid --------------------------------------------------------------->
+  const isValidClass = (className:string) => {
     const isNumberBased = !!stylesNumber[className.split("-")[0]];
     const isStringBased = !!stylesString[className];
     return isNumberBased || isStringBased;
   };
 
-  // 스타일을 적용하는 함수
-  const applyStyle = (element) => {
+  // Apply style to element ----------------------------------------------------------------------->
+  const applyStyle = (element:HTMLElement) => {
     element.classList.forEach((className) => {
       if (isValidClass(className)) {
-        const [prefix, value] = className.split("-");
+
+        // Convert to negative number if needed
+        let [prefix, value] = className.split("-");
+        if (value && value.startsWith("n")) {
+          value = "-" + value.substring(1);
+        }
+
         if (stylesNumber[prefix]) {
           const [property, unit] = stylesNumber[prefix];
           element.style[property] = `${value}${unit}`;
-        } else if (stylesString[className]) {
+        }
+        else if (stylesString[className]) {
           Object.entries(stylesString[className]).forEach(([property, value]) => {
             element.style[property] = value;
           });
@@ -93,12 +121,12 @@ export const useDynamicStyle = (baseElement = document) => {
     });
   };
 
-  // DOM 요소를 선택하는 셀렉터 생성
+  // Define selector ------------------------------------------------------------------------------>
   const numberSelector = Object.keys(stylesNumber).map((prefix) => `[class*="${prefix}-"]`).join(", ");
   const stringSelector = Object.keys(stylesString).join(", ");
   const selector = `${numberSelector}, ${stringSelector}`;
 
-  // 요소에 스타일 적용
+  // UseLayoutEffect ------------------------------------------------------------------------------>
   useLayoutEffect(() => {
     baseElement.querySelectorAll(selector).forEach(applyStyle);
 
@@ -119,7 +147,9 @@ export const useDynamicStyle = (baseElement = document) => {
       subtree: true
     });
 
-    return () => observer.disconnect();
-  }, []);
+    return () => {
+      observer.disconnect();
+    };
+  }, [baseElement, locationName]);
 
 };
