@@ -1,3 +1,9 @@
+// ------------------------------------------------------------------------------------------------>
+// ------------------------------------------------------------------------------------------------>
+// 추후 css 저장전 테스트용입니다
+// ------------------------------------------------------------------------------------------------>
+// ------------------------------------------------------------------------------------------------>
+
 // 1. fnDynamicStyle ------------------------------------------------------------------------------>
 var fnDynamicStyle = function (baseElement = document) {
 
@@ -107,9 +113,9 @@ var fnDynamicStyle = function (baseElement = document) {
       !isNaN(value) &&
       parts.length === 2
     );
-  }
+  };
 
-  // 3. 스타일 적용
+  // 3-1. 스타일 적용
   function applyStyle(element, className) {
     if (stylesString[className]) {
       for (let prop in stylesString[className]) {
@@ -134,7 +140,16 @@ var fnDynamicStyle = function (baseElement = document) {
         "important"
       );
     }
-  }
+  };
+
+  // 3-2. 적용된 스타일 저장
+  /* function saveStyle (element, className) {
+    var pageName = location.pathname.split("/").pop().split(".")[0];
+    var dynamicStyle = JSON.parse(localStorage.getItem("fnDynamicStyle")) || {};
+    dynamicStyle[pageName] = dynamicStyle[pageName] || {};
+    dynamicStyle[pageName][className] = element.style.cssText;
+    localStorage.setItem("fnDynamicStyle", JSON.stringify(dynamicStyle));
+  }; */
 
   // 4. style 접두사를 기반으로 css 선택자 생성
   var numberSelector = Object.keys(stylesNumber).flatMap(function (prefix) {
@@ -166,6 +181,7 @@ var fnDynamicStyle = function (baseElement = document) {
       var className = classNames[j];
       if (checkValidClass(className)) {
         applyStyle(element, className);
+        /* saveStyle(element, className); */
       }
     }
   }
@@ -192,18 +208,23 @@ var fnDynamicStyle = function (baseElement = document) {
 
 // 0. fnMediaQuery -------------------------------------------------------------------------------->
 // 뷰포트 md 이하일 경우 카드 하단 여백이 많이 생기는 이슈를 해결하기 위함
-// 사이드바 200을 감안해서 1199px로 설정
 var fnMediaQuery = function () {
-  var mediaQuery = window.matchMedia("(max-width: 1199px)");
+  var mediaQuery = window.matchMedia("(min-width: 1200px) and (max-width: 10000px)");
   var elements = document.querySelectorAll(".cards");
 
-  // 미디어 쿼리 변경 시 실행할 함수를 정의합니다.
+  // 미디어 쿼리 변경 시 실행할 함수를 정의
   var checkMediaQuery = function() {
-    elements.forEach(function(element) {
+    elements.forEach(element => {
       if (mediaQuery.matches && element.id === "gridView") {
         element.style.height = "88%";
       }
+      else if (!mediaQuery.matches && element.id === "gridView") {
+        element.style.height = "88%";
+      }
       if (mediaQuery.matches && element.id === "contentView") {
+        element.style.height = "88%";
+      }
+      else if (!mediaQuery.matches && element.id === "contentView") {
         element.style.height = "fit-content";
       }
     });
@@ -212,7 +233,7 @@ var fnMediaQuery = function () {
   // 초기 상태에서 미디어 쿼리 체크
   checkMediaQuery();
 
-  // 미디어 쿼리 변경 시 checkMediaQuery 함수를 호출합니다.
+  // 미디어 쿼리 변경 시 checkMediaQuery 함수를 호출
   mediaQuery.addEventListener("change", checkMediaQuery);
 };
 
